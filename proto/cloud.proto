@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package cloud;
+
+option go_package = "github.com/example/proto/cloud";
+
+// WorkerService defines the interaction between the worker nodes and the control plane.
+service WorkerService {
+  // Register a new worker node.
+  rpc Register(RegisterRequest) returns (RegisterResponse) {}
+  
+  // Heartbeat is a bidirectional stream to maintain the connection and push events to workers.
+  rpc Heartbeat(stream HeartbeatRequest) returns (stream HeartbeatResponse) {}
+
+  // SubmitProof allows a worker to submit a cryptographic proof of storage.
+  rpc SubmitProof(ProofRequest) returns (ProofResponse) {}
+}
+
+// ClientService defines the interaction between end-users and the control plane.
+service ClientService {
+  // UploadManifest allows a client to submit a file upload manifest.
+  rpc UploadManifest(ManifestRequest) returns (ManifestResponse) {}
+
+  // AllocateNodes requests an allocation of worker nodes for chunk storage.
+  rpc AllocateNodes(AllocateRequest) returns (AllocateResponse) {}
+}
+
+// Registration
+message RegisterRequest {
+  string address = 1;
+  int32 capacity = 2;
+}
+
+message RegisterResponse {
+  bool success = 1;
+  string node_id = 2;
+}
+
+// Heartbeat
+message HeartbeatRequest {
+  string node_id = 1;
+  int32 capacity = 2;
+}
+
+message HeartbeatResponse {
+  // The control plane can push tasks (like a proof challenge) down the heartbeat stream.
+  string task_type = 1; // e.g., "proof_challenge"
+  string job_id = 2;
+  string chunk_id = 3;
+}
+
+// Proofs
+message ProofRequest {
+  string node_id = 1;
+  string job_id = 2;
+  string chunk_id = 3;
+  string hash = 4;
+}
+
+message ProofResponse {
+  bool success = 1;
+}
+
+// Client Manifest
+message ManifestRequest {
+  string file_name = 1;
+  int32 total_chunks = 2;
+}
+
+message ManifestResponse {
+  bool success = 1;
+  string manifest_id = 2;
+}
+
+// Allocation
+message AllocateRequest {
+  int32 num_chunks = 1;
+}
+
+message AllocateResponse {
+  // Ordered list of node addresses assigned to chunks.
+  repeated string node_addresses = 1;
+}
